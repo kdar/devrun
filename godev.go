@@ -28,6 +28,7 @@ type Options struct {
   Include []string `short:"i" default:"" long:"include" description:"Regexp of dirs to include for watching. Can be specified multiple times. Default: .*"`
   Exclude []string `short:"e" default:"" long:"exclude" description:"Regexp of dirs to exclude from watching. Can be specified multiple times. Default: ^\.*$"`
   Files   []string `short:"f" default:"" long:"files" description:"Regexp of files that, if changed, will cause a build/run. Can be specified multiple times. Default: ^(.*\.go|.*\.yaml|.*\.conf)$"`
+  Watch   []string `short:"w" long:"watch" description:"The directory(s) where to watch and scan for dependencies"`
 
   include []*regexp.Regexp
   exclude []*regexp.Regexp
@@ -357,9 +358,11 @@ func main() {
     opts.files = append(opts.files, regexp.MustCompile(r))
   }
 
-  err = filepath.Walk(dir, getWatchDirs)
-  if err != nil {
-    log.Fatal(err)
+  for _, d := range append([]string{dir}, opts.Watch...) {
+    err = filepath.Walk(d, getWatchDirs)
+    if err != nil {
+      log.Fatal(err)
+    }
   }
 
   watcher()
