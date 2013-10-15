@@ -312,13 +312,13 @@ func main() {
     os.Exit(1)
   }
 
-  if len(opts.Include) == 0 {
+  if len(opts.Include) == 0 || opts.Include[0] == "" {
     opts.Include = []string{`.*`}
   }
-  if len(opts.Exclude) == 0 {
+  if len(opts.Exclude) == 0 || opts.Exclude[0] == "" {
     opts.Exclude = []string{`^\.*$`}
   }
-  if len(opts.Files) == 0 {
+  if len(opts.Files) == 0 || opts.Files[0] == "" {
     opts.Files = []string{`^(.*\.go|.*\.yaml|.*\.conf)$`}
   }
 
