@@ -17,6 +17,7 @@ import (
   "os/exec"
   "path/filepath"
   "regexp"
+  "runtime"
   "strconv"
   "strings"
   "sync"
@@ -29,6 +30,7 @@ type Options struct {
   Exclude []string `short:"e" default:"" long:"exclude" description:"Regexp of dirs to exclude from watching. Can be specified multiple times. Default: ^\.*$"`
   Files   []string `short:"f" default:"" long:"files" description:"Regexp of files that, if changed, will cause a build/run. Can be specified multiple times. Default: ^(.*\.go|.*\.yaml|.*\.conf)$"`
   Watch   []string `short:"w" long:"watch" description:"The directory(s) where to watch and scan for dependencies"`
+  Clean   []string `short:"c" long:"clean" description:"Packages to clean before each rebuild"`
 
   include []*regexp.Regexp
   exclude []*regexp.Regexp
@@ -57,11 +59,16 @@ func parseArgs() []string {
 }
 
 func build() error {
+  err := clean()
+  if err != nil {
+    return err
+  }
+
   log.Printf("Rebuilding %s...\n", program)
   cmd := exec.Command("go", "build")
   cmd.Stdout = os.Stdout
   cmd.Stderr = os.Stderr
-  err := cmd.Run()
+  err = cmd.Run()
   if err != nil {
     return err
   }
@@ -81,6 +88,17 @@ func run() (*exec.Cmd, error) {
   }
 
   return cmd, nil
+}
+
+func clean() error {
+  log.Printf("Cleaning %v...\n", opts.Clean)
+
+  for _, pkg := range opts.Clean {
+    path := which(pkg, "pkg/"+runtime.GOOS+"_"+runtime.GOARCH)
+    os.RemoveAll(path)
+  }
+
+  return nil
 }
 
 func buildAndRun() (*exec.Cmd, error) {
@@ -201,9 +219,9 @@ func watcher() {
 // }
 
 // find where on the fs a package is
-func which(pkg string) string {
+func which(pkg string, location string) string {
   for _, top := range strings.Split(os.Getenv("GOPATH"), ":") {
-    dir := top + "/src/" + pkg
+    dir := top + "/" + location + "/" + pkg
     _, err := os.Stat(dir)
     if err == nil {
       return dir
@@ -267,7 +285,7 @@ func getWatchDirsFromFile(path string) error {
       return err // can't happen
     }
 
-    wpath := which(path)
+    wpath := which(path, "src")
 
     if wpath != "" {
       if shouldWatch(wpath) {
@@ -301,6 +319,17 @@ func getWatchDirsFromFile(path string) error {
 //   return "", errors.New("cwd not found in GOPATH")
 // }
 
+// Fixes a weird thing with go-flags where even if
+// the user doesn't specify an option, it still
+// have a string array with one element that is empty.
+// If they do specify an option, the first element is
+// still an empty string.
+func fixSlices(slices ...*[]string) {
+  for i, s := range slices {
+    *slices[i] = (*s)[1:]
+  }
+}
+
 func main() {
   var err error
 
@@ -312,14 +341,20 @@ func main() {
     os.Exit(1)
   }
 
-  if len(opts.Include) == 0 || opts.Include[0] == "" {
+  // Weird fix for go-flags
+  fixSlices(&opts.Include, &opts.Exclude, &opts.Files, &opts.Clean)
+
+  if len(opts.Include) == 0 {
     opts.Include = []string{`.*`}
   }
-  if len(opts.Exclude) == 0 || opts.Exclude[0] == "" {
+  if len(opts.Exclude) == 0 {
     opts.Exclude = []string{`^\.*$`}
   }
-  if len(opts.Files) == 0 || opts.Files[0] == "" {
+  if len(opts.Files) == 0 {
     opts.Files = []string{`^(.*\.go|.*\.yaml|.*\.conf)$`}
+  }
+  if len(opts.Clean) == 0 {
+    opts.Clean = nil
   }
 
   // flagSet.Usage = usage
