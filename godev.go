@@ -326,7 +326,9 @@ func getWatchDirsFromFile(path string) error {
 // still an empty string.
 func fixSlices(slices ...*[]string) {
   for i, s := range slices {
-    *slices[i] = (*s)[1:]
+    if s != nil && len(*s) > 0 {
+      *slices[i] = (*s)[1:]
+    }
   }
 }
 
