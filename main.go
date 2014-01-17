@@ -29,9 +29,10 @@ var (
 
 // run the program
 func run(c *cli.Context, cmderr chan error) (*exec.Cmd, error) {
-	if c.String("run") != "" {
+	if len(c.Args()) > 0 {
 		log.Printf("Running program...\n")
-		cmd := exec.Command(c.String("shell"), "-c", c.String("run"))
+
+		cmd := exec.Command(os.ExpandEnv(c.String("shell")), "-c", strings.Join(c.Args(), " "))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
@@ -240,10 +241,6 @@ func getWatchDirsFromFile(path string) error {
 func cmdWatchAction(c *cli.Context) {
 	var err error
 
-	if c.String("run") == "" {
-		log.Println("Warning: no command to run")
-	}
-
 	// build regexps
 	for _, r := range c.StringSlice("include") {
 		include = append(include, regexp.MustCompile(r))
@@ -277,12 +274,8 @@ func main() {
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "shell",
-					Value: "sh",
-					Usage: "shell to use",
-				},
-				cli.StringFlag{
-					Name:  "run",
-					Usage: "shell command to run (e.g. 'go build && exec ./prog')",
+					Value: "${SHELL}",
+					Usage: "shell to use (defaults to the env variable SHELL)",
 				},
 				cli.StringSliceFlag{
 					Name:  "dir",

@@ -9,13 +9,17 @@ This is not thoroughly tested. Report any issues you have.
 
 #### Notes
 
-It is important that in the --run option you use "exec" when you want to run a command that should be killed when godev detects code changes.
+The watch subcommand will run whatever commands you pass in its own shell. What it does behind the scenes is run `sh -c "your commands here"`. For example, `devrun watch go test` will run `sh -c "go test"`. This means you can use any one liner shell script in here. This also means that if you have a long running process (the process doesn't exit in a short amount of time) such as a webserver or other service, you must use "exec" if you want devrun to be able to kill it and restart the process. 
 
 #### Examples
 
-    devrun watch --files "^(.*\.go|.*\.yaml|.*\.conf)$" --run "godep go build && exec ./prog run"
+    devrun watch --files "^(.*\.go|.*\.yaml|.*\.conf)$" "godep go build && exec ./prog run"
 
-    devrun watch --run "go test"
+    devrun watch go test
+
+    devrun watch -- go test -run="TestFunc"
+
+    devrun watch exec ./webserver
 
 #### TODO
 
