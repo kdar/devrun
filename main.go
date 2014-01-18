@@ -6,6 +6,7 @@ package main
 import (
 	"github.com/codegangsta/cli"
 	"github.com/howeyc/fsnotify"
+	"github.com/kballard/go-shellquote"
 	"go/parser"
 	"go/token"
 	"log"
@@ -31,8 +32,7 @@ var (
 func run(c *cli.Context, cmderr chan error) (*exec.Cmd, error) {
 	if len(c.Args()) > 0 {
 		log.Printf("Running program...\n")
-
-		cmd := exec.Command(os.ExpandEnv(c.String("shell")), "-c", strings.Join(c.Args(), " "))
+		cmd := exec.Command(os.ExpandEnv(c.String("shell")), "-c", shellquote.Join(c.Args()...))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
