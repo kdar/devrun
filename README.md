@@ -13,7 +13,7 @@ The watch subcommand will run whatever commands you pass in its own shell. What 
 
 #### Examples
 
-    devrun watch --files "^(.*\.go|.*\.yaml|.*\.conf)$" "godep go build && exec ./prog run"
+    devrun watch --exclude-files "^(.*_test\.go)$" --include-files "^(.*\.go|.*\.yaml|.*\.conf)$" "godep go build && exec ./prog run"
 
     devrun watch go test
 

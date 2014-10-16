@@ -23,10 +23,11 @@ import (
 )
 
 var (
-	wpaths  = make(map[string]string)
-	include []*regexp.Regexp
-	exclude []*regexp.Regexp
-	files   []*regexp.Regexp
+	wpaths       = make(map[string]string)
+	include      []*regexp.Regexp
+	exclude      []*regexp.Regexp
+	includeFiles []*regexp.Regexp
+	excludeFiles []*regexp.Regexp
 )
 
 // run the program
@@ -79,7 +80,14 @@ func shouldRerun(name string) (ret bool) {
 		return
 	}
 
-	for _, r := range files {
+	for _, r := range excludeFiles {
+		if r.MatchString(name) {
+			ret = false
+			return
+		}
+	}
+
+	for _, r := range includeFiles {
 		if r.MatchString(name) {
 			ret = true
 			return
@@ -260,8 +268,11 @@ func cmdWatchAction(c *cli.Context) {
 	for _, r := range c.StringSlice("exclude") {
 		exclude = append(exclude, regexp.MustCompile(r))
 	}
-	for _, r := range c.StringSlice("files") {
-		files = append(files, regexp.MustCompile(r))
+	for _, r := range c.StringSlice("include-files") {
+		includeFiles = append(includeFiles, regexp.MustCompile(r))
+	}
+	for _, r := range c.StringSlice("exclude-files") {
+		excludeFiles = append(excludeFiles, regexp.MustCompile(r))
 	}
 
 	for _, d := range c.StringSlice("dir") {
@@ -305,9 +316,14 @@ func main() {
 					Usage: `Regexp of dirs to exclude from watching.`,
 				},
 				cli.StringSliceFlag{
-					Name:  "files",
+					Name:  "include-files",
 					Value: &cli.StringSlice{`^(.*\.go)$`},
 					Usage: `Regexp of files that, if changed, will cause a rerun.`,
+				},
+				cli.StringSliceFlag{
+					Name:  "exclude-files",
+					Value: &cli.StringSlice{`^\.*$`},
+					Usage: `Regexp of files that, if changed, will not cause a rerun.`,
 				},
 			},
 		},
