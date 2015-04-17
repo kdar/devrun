@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"log"
@@ -11,10 +12,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/codegangsta/cli"
@@ -146,7 +147,13 @@ func watcher(c *cli.Context) {
 								}
 							default:
 								log.Printf("Killing program...\n")
-								cmd.Process.Signal(syscall.SIGINT)
+								if cmd.Process.Signal(os.Interrupt) != nil {
+									if runtime.GOOS == "windows" {
+										exec.Command("TASKKILL", "/F", "/T", "/PID", fmt.Sprintf("%d", cmd.Process.Pid)).Run()
+									} else {
+										cmd.Process.Kill()
+									}
+								}
 								<-cmderr
 							}
 						}
